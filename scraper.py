@@ -35,11 +35,20 @@ WebDriverWait(driver, 10).until(
 
 time.sleep(3)  # Espera para que carguen los elementos
 
-# Hacer scroll para cargar más resultados
+# Hacer scroll dinámico hasta cargar todos los resultados
 scrollable_div = driver.find_element(By.XPATH, "//div[@role='feed']")
-for _ in range(5):  # Ajusta la cantidad de scrolls si es necesario
+previous_height = -1
+
+while True:
     driver.execute_script("arguments[0].scrollTop = arguments[0].scrollHeight", scrollable_div)
     time.sleep(2)
+
+    new_height = driver.execute_script("return arguments[0].scrollHeight", scrollable_div)
+
+    if new_height == previous_height:
+        break
+
+    previous_height = new_height
 
 # Extraer nombres, direcciones y calificaciones
 services = driver.find_elements(By.XPATH, "//div[@role='feed']//div[contains(@class, 'Nv2PK')]")
@@ -48,23 +57,36 @@ print("\nServicios de bicicletas encontrados:\n")
 
 for index, service in enumerate(services, start=1):
     try:
-        name = service.find_element(By.XPATH, ".//div[contains(@class, 'qBF1Pd')]").text  # Nombre
+        name = service.find_element(By.XPATH, ".//div[contains(@class, 'qBF1Pd')]").text
     except:
         name = "No disponible"
 
     try:
-        address = service.find_element(By.XPATH, ".//div[contains(@class, 'W4Efsd')]").text  # Dirección
+        address = service.find_element(By.XPATH, ".//div[contains(@class, 'W4Efsd')]").text
     except:
         address = "No disponible"
 
     try:
-        rating = service.find_element(By.XPATH, ".//span[contains(@class, 'MW4etd')]").text  # Calificación
+        rating = service.find_element(By.XPATH, ".//span[contains(@class, 'MW4etd')]").text
     except:
         rating = "No disponible"
 
+    try:
+        service_type = service.find_element(By.XPATH, ".//div[contains(@class, 'UY7F9')]").text
+    except:
+        service_type = "No disponible"
+
+    try:
+        website = service.find_element(By.XPATH, ".//a[contains(@aria-label, 'Sitio web')]").get_attribute("href")
+    except:
+        website = "No disponible"
+
     print(f"{index}. {name}")
-    print(f"   Dirección: {address}")
-    print(f"   Calificación: {rating}\n")
+    print(f"   📍 Localización: {address}")
+    print(f"   🌆 Ciudad: Cochabamba")
+    print(f"   🏷️ Tipo de servicio: {service_type}")
+    print(f"   ⭐ Calificación: {rating}")
+    print(f"   🔗 Enlace sitio web: {website}\n")
 
 # Mantener el navegador abierto unos segundos para revisión
 time.sleep(10)
