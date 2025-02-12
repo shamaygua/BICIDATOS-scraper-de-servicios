@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 import re
@@ -26,7 +27,7 @@ search_box = WebDriverWait(driver, 10).until(
 )
 
 # Escribir la búsqueda
-search_box.send_keys("servicio de bicicletas en Cochabamba, Bolivia")
+search_box.send_keys("servicio de bicicletas en Cochabamba")
 search_box.send_keys(Keys.RETURN)
 
 # Esperar a que los resultados aparezcan
@@ -64,17 +65,46 @@ for index, service in enumerate(services, start=1):
         name = "No disponible"
 
     # Hacer clic en el servicio para abrir el panel lateral
-    service.click()
+    driver.execute_script("arguments[0].scrollIntoView();", service)
+    time.sleep(1)  # Pequeña pausa para asegurar que el desplazamiento ocurra
+
+    actions = ActionChains(driver)
+    actions.move_to_element(service).click().perform()
 
     # Esperar que el panel lateral cargue
-    time.sleep(3)
+    time.sleep(2)
 
+    # Extraer dirección correctamente
     try:
         address = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, "//button[contains(@aria-label, 'Dirección')]"))
+            EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'Io6YTe fontBodyMedium kR99db fdkmkc')]"))
         ).text
     except:
         address = "No disponible"
+
+    # Extraer número de teléfono
+    try:
+        phone_number = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Teléfono')]/div").text
+    except:
+        phone_number = "No disponible"
+
+    # Extraer tipo de servicio
+    try:
+        service_type = driver.find_element(By.XPATH, "//button[contains(@class, 'DkEaL')]").text
+    except:
+        service_type = "No disponible"
+
+    # Extraer calificación
+    try:
+        rating = service.find_element(By.XPATH, ".//span[contains(@class, 'MW4etd')]").text
+    except:
+        rating = "No disponible"
+
+    # Extraer descripción
+    try:
+        description = driver.find_element(By.XPATH, "//span[@class='snippet-text']").text
+    except:
+        description = "No disponible"
 
     # Extraer coordenadas desde la URL de Maps
     try:
@@ -88,39 +118,31 @@ for index, service in enumerate(services, start=1):
     except:
         coordinates = "No disponible"
 
+    # Extraer horarios
     try:
-        rating = driver.find_element(By.XPATH, "//span[contains(@class, 'MW4etd')]").text
+        hours_button = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Horarios')]")
+        hours_button.click()
+        time.sleep(1)
+        hours = driver.find_element(By.XPATH, "//div[contains(@class, 'section-hours')]").text
     except:
-        rating = "No disponible"
+        hours = "No disponible"
 
-    try:
-        service_type = driver.find_element(By.XPATH, "//button[contains(@class, 'DkEaL')]").text
-    except:
-        service_type = "No disponible"
-
+    # Extraer enlace del sitio web
     try:
         website = driver.find_element(By.XPATH, "//a[contains(@aria-label, 'Sitio web')]").get_attribute("href")
     except:
         website = "No disponible"
 
-    try:
-        phone_number = driver.find_element(By.XPATH, "//button[contains(@aria-label, 'Llamar')]").text
-    except:
-        phone_number = "No disponible"
-
-    try:
-        description = driver.find_element(By.XPATH, "//span[@class='snippet-text']").text
-    except:
-        description = "No disponible"
-
+    # Mostrar resultados
     print(f"{index}. {name}")
-    print(f"   Dirección: {address}")
-    print(f"   Coordenadas: {coordinates}")
-    print(f"   Tipo de servicio: {service_type}")
-    print(f"   Calificación: {rating}")
-    print(f"   Descripción: {description}")
-    print(f"   Teléfono: {phone_number}")
-    print(f"   Enlace sitio web: {website}\n")
+    print(f"  Dirección: {address}")  # Ahora sí extrae el texto correctamente
+    print(f"  Coordenadas: {coordinates}")
+    print(f"  Tipo de servicio: {service_type}")
+    print(f"  Calificación: {rating}")
+    print(f"  Descripción: {description}")
+    print(f"  Teléfono: {phone_number}")
+    print(f"  Horarios: {hours}")
+    print(f"  Sitio web: {website}\n")
 
 # Mantener el navegador abierto unos segundos para revisión
 time.sleep(10)
